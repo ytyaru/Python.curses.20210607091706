@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # coding: utf8
+# 色をセットする。
 import os, curses
 def main(stdscr):
     if not curses.has_colors(): raise Exception('このターミナルは色を表示できません。')
