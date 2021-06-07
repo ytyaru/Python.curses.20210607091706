@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # coding: utf8
-# 色をセットする。
+# 窓を使う。ボーダーと描画領域が重複してしまう。
 import os, curses
 def main(stdscr):
     if not curses.has_colors(): raise Exception('このターミナルは色を表示できません。')
