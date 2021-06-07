@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # coding: utf8
-# テキスト配列を1行ずつ表示したボックスを表示する。（ボーダーライン）
+# キー入力を受け付ける。
 import os, curses
 def make_window_border(stdscr,x,y,w,h):
     outer = make_window(stdscr,x,y,w,h)
@@ -36,8 +36,12 @@ def main(stdscr):
     draw(inner1, items, width)
     curses.doupdate()
     stdscr.refresh()
+
+    stdscr.keypad(True)
+    key = stdscr.getkey()
+    inner1.addstr(0, 0, key)
+    inner1.refresh()
     stdscr.getkey()
-    curses.endwin()
 
 
 if __name__ == "__main__":
