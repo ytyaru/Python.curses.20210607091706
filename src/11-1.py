@@ -12,6 +12,8 @@ class Main:
         pad = ScrollCursorListPad(self.__screen)
     def __initialize(self):
         curses.curs_set(0)
+        curses.noecho()
+        curses.cbreak()
         if not curses.has_colors(): raise Exception('このターミナルは色を表示できません。')
         if not curses.can_change_color(): raise Exception('このターミナルは色を変更できません。')
         self.__init_color_pair()
@@ -33,9 +35,9 @@ class BorderPad:
     def ScrollIndex(self): return self.__scroll_index
     def scroll_up(self):
         i = self.__scroll_index-1
-#        if i <= 0: i, _ = self.Inner.getmaxyx()
+        if i <= 0: i = len(self.Items)-curses.LINES+1
 #        if i <= 0: i = len(self.Items)-1
-        if i <= 0: i = 0
+#        if i <= 0: i = 0
         self.__scroll_index = i
 #        self.__scroll_index = h if self.__scroll_index <= 0 else self.__scroll_index-1
     def scroll_down(self):
@@ -44,6 +46,8 @@ class BorderPad:
         self.__scroll_index = 0 if len(self.Items)-1 <= self.__scroll_index else self.__scroll_index+1
 #        h, w = self.Inner.getmaxyx()
 #        self.__scroll_index = 0 if h-1 <= self.__scroll_index else self.__scroll_index+1
+    def scroll_home(self): self.__scroll_index = 0
+    def scroll_end(self):self.__scroll_index = len(self.Items)-curses.LINES+1
 
     def __init__(self,screen,x=-1,y=-1,w=-1,h=-1):
         self.__screen = screen
@@ -55,9 +59,7 @@ class BorderPad:
         self.__make_window_border(x,y,w,h)
     def __make_window_border(self,x,y,w,h):
         self.__outer = curses.newpad(h,w)
-#        self.__outer = self.__make_window(x,y,w,h)
         self.__outer.border(0)
-#        self.__inner = self.__make_window(x+1,y+1,w-2,h-2)
         self.__inner = self.__outer.subpad(h-2,w-2,y+1,x+1)
     def __make_window(self,x,y,w,h):
         if curses.LINES < y: raise Exception(f'引数yは{curses.LINES}以下にしてください。')
@@ -89,6 +91,7 @@ class ListPad(BorderPad):
         self.__y = y
         self.__w = self.__get_window_width() if -1 == w else w
         self.__h = self.__get_window_height() if -1 == h else h
+#        self.__h = len(self.Items)
         self.__h = 100
         super().__init__(screen,self.X,self.Y,self.W,self.H)
         self.draw()
@@ -108,6 +111,7 @@ class ListPad(BorderPad):
 class CursorListPad(ListPad):
     def up(self):
         self.__index = len(self.Items)-1 if self.__index <= 0 else self.__index-1
+#        self.ScrollIndex = 
     def down(self):
         self.__index = 0 if len(self.Items)-1 <= self.__index else self.__index+1
     def __init__(self,screen,items=None,index=0,x=-1,y=-1,w=-1,h=-1):
@@ -119,26 +123,11 @@ class CursorListPad(ListPad):
             for i, s in enumerate(self.Items):
                 self.Inner.addstr(i, 0, s.ljust(self.W), 
                                   curses.color_pair(1) | curses.A_REVERSE if i == self.__index else curses.color_pair(1))
-                self.Inner.addstr(i, 0, f'{i} I={len(self.Items)} ScrIdx={self.ScrollIndex}'.ljust(self.W), 
-                                  curses.color_pair(1) | curses.A_REVERSE if i == self.__index else curses.color_pair(1))
-
-#            for i, s in enumerate(self.Items):
-#                self.Inner.addstr(i, 0, self.Items[i+self.ScrollIndex].ljust(self.W), 
-#                                  curses.color_pair(1) | curses.A_REVERSE if i == self.__index else curses.color_pair(1))
-#                self.Inner.addstr(i, 0, f'ScrIdx={self.ScrollIndex}'.ljust(self.W), 
-#                                  curses.color_pair(1) | curses.A_REVERSE if i == self.__index else curses.color_pair(1))
-#                self.Inner.addstr(i, 0, s.ljust(self.W), 
-#                                  curses.color_pair(1) | curses.A_REVERSE if i == self.__index else curses.color_pair(1))
-#                self.Inner.addstr(i, 0, f'ScrIdx={self.ScrollIndex}'.ljust(self.W), 
+#                self.Inner.addstr(i, 0, f'{i} I={len(self.Items)} ScrIdx={self.ScrollIndex}'.ljust(self.W), 
 #                                  curses.color_pair(1) | curses.A_REVERSE if i == self.__index else curses.color_pair(1))
         except curses.error: pass
-#        self.Inner.refresh();
         h, w = self.Inner.getmaxyx()
-#        self.Inner.refresh(self.ScrollIndex, 0, 0, 0, 10, 80)
         self.Inner.refresh(self.ScrollIndex, 0, 0, 0, h-1 if h < curses.LINES else curses.LINES-1, w-1 if w < curses.COLS else curses.COLS-1)
-#        self.Inner.refresh(self.ScrollIndex, 0, 0, 0, h if h < curses.LINES else curses.LINES, w if w < curses.COLS else curses.COLS)
-#        self.Inner.refresh(self.ScrollIndex, 0, 0, 0, h, w)
-#        self.Screen.refresh(self.ScrollIndex, 0, 0, 0, h, w)
 
     def input(self):
         self.Screen.keypad(True)
@@ -150,8 +139,12 @@ class CursorListPad(ListPad):
             if ord('q') == key or 27 == key: break
 #            if curses.KEY_UP == key: self.up()
 #            if curses.KEY_DOWN == key: self.down()
-            if curses.KEY_UP == key: self.scroll_up()
-            if curses.KEY_DOWN == key: self.scroll_down()
+#            if curses.KEY_UP == key:self.scroll_up()
+#            if curses.KEY_DOWN == key: self.scroll_down()
+            if curses.KEY_UP == key:
+                self.scroll_up()
+            if curses.KEY_DOWN == key:
+                self.scroll_down()
             try: self.draw()
             except curses.error: pass
             time.sleep(0.01)
